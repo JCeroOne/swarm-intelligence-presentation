@@ -1,6 +1,9 @@
-function Dist(x1, y1, x2, y2){
-    return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
-}
+const MAX_PATH_LENGTH = 500;
+const MAX_ITERATIONS = 500;
+const ANTS = 30;
+
+const Dist = (x1, y1, x2, y2) => Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+
 class Grid {
     #cells;
     constructor(width, height){
@@ -13,6 +16,8 @@ class Grid {
         const colony_pos = [Math.round(this.width * 0.15), Math.round(this.height / 2)];
         const food_pos = this.#foodPos(colony_pos);
 
+        this.colony = new Colony(this, colony_pos[0], colony_pos[1], ANTS);
+
         console.log(colony_pos, food_pos);
 
         for(let x = 0; x < this.width; x++){
@@ -22,7 +27,7 @@ class Grid {
                 else if(x == food_pos[0] && y == food_pos[1]) type = "food";
                 else if(Dist(colony_pos[0], colony_pos[1], x, y) < 2 || Dist(food_pos[0], food_pos[1], x, y) < 2) type = "normal";
                 else type = ["normal", "normal", "normal", "obstacle"][Math.floor(Math.random() * 4)]
-                this.#cells[`${x} ${y}`] = new GridCell(x, y, food_pos, type);
+                this.#cells[`${x} ${y}`] = new GridCell(this, x, y, food_pos, type);
             }
         }
     }
@@ -51,23 +56,23 @@ class Grid {
         console.log(display);
     }
 }
+
 class GridCell {
-    constructor(x, y, food_pos, type="normal"){
+    constructor(grid, x, y, food_pos, type="normal"){
+        this.grid = grid;
         this.x = x;
         this.y = y;
         this.type = type;
         this.pheromones = 0;
-        this.smell = this.#calcSmell(food_pos);
-    }
-    #calcSmell(food_pos){
-        return 1 / Math.max(1, Dist(this.x, this.y, food_pos[0], food_pos[1]));
     }
     Step(){
         this.pheromones *= 0.9;
     }
 }
+
 class Colony {
-    constructor(x, y, size){
+    constructor(grid, x, y, size){
+        this.grid = grid;
         this.x = x;
         this.y = y;
         this.size = size;
@@ -75,7 +80,46 @@ class Colony {
     }
     #populate(){
         this.ants = [];
-        for(let i = 0; i < this.size; i++) this.ants.push(new Ant());
+        for(let i = 0; i < this.size; i++) this.ants.push(new Ant(this.grid, this.x, this.y));
     }
 }
-class Ant {}
+
+class Ant {
+    constructor(grid, x, y){
+        this.grid = grid;
+        this.x = x;
+        this.y = y;
+        this.path = [];
+    }
+    calcProbs(){
+        const cells = [];
+        if(this.path.indexOf([this.x, this.y + 1]) == -1) cells.push({cell: this.grid.getCell(this.x, this.y + 1), prob: 0});
+        if(this.path.indexOf([this.x + 1, this.y]) == -1) cells.push({cell: this.grid.getCell(this.x + 1, this.y), prob: 0});
+        if(this.path.indexOf([this.x - 1, this.y]) == -1) cells.push({cell: this.grid.getCell(this.x - 1, this.y), prob: 0});
+        if(this.path.indexOf([this.x, this.y - 1]) == -1) cells.push({cell: this.grid.getCell(this.x, this.y - 1), prob: 0});
+        const total = cells.reduce((total, current) => total + Math.max(0.1, current.cell.pheromones), 0);
+        cells.forEach(c => {
+            c.prob = Math.max(0.1, c.cell.pheromones) / total;
+        });
+        return cells;
+    }
+    move(){
+        this.path.push([this.x, this.y]);
+        const cells = this.calcProbs();
+        let next = Math.random();
+        let nextCell = null;
+        let cumulative = 0;
+        for(let c = 0; c < cells.length; c++){
+            if(cumulative + cells[c].prob >= next){
+                nextCell = cells[c].cell;
+                break;
+            }
+            cumulative += cells[c].prob;
+        }
+        this.x = nextCell.x;
+        this.y = nextCell.y;
+    }
+    layPheromones(){
+
+    }
+}
