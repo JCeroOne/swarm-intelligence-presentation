@@ -196,17 +196,20 @@ function runACO() {
                 aCtx.fillStyle = `rgb(0, 0, ${b})`;
             };
             aCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+            // If finished...
+            if(x == grid.width - 1 && y == grid.height - 1){
+                aCtx.fillStyle = "#fff";
+                aCtx.strokeStyle = "#000";
+                aCtx.lineWidth = 3;
+                aCtx.font = "bold 18px Arial";
+                aCtx.textAlign = "start";
+                aCtx.textBaseline = "bottom";
+                aCtx.strokeText(`Iteration ${iterations}`, 10, size.height - 10);
+                aCtx.fillText(`Iteration ${iterations}`, 10, size.height - 10);
+                if(currentIdx == 6) nextFrame = window.requestAnimationFrame(runACO);
+            }
         }
     }
-    aCtx.fillStyle = "#fff";
-    aCtx.strokeStyle = "#000";
-    aCtx.lineWidth = 3;
-    aCtx.font = "bold 18px Arial";
-    aCtx.textAlign = "start";
-    aCtx.textBaseline = "bottom";
-    aCtx.strokeText(`Iteration ${iterations}`, 10, size.height - 10);
-    aCtx.fillText(`Iteration ${iterations}`, 10, size.height - 10);
-    if(currentIdx == 6 && iterations < 500) nextFrame = window.requestAnimationFrame(runACO);
 }
 
 /**
