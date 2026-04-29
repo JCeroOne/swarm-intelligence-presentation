@@ -191,7 +191,10 @@ function runACO() {
             if(cell.type == "food") aCtx.fillStyle = "#0f0";
             else if(cell.type == "colony") aCtx.fillStyle = "#f00";
             else if(cell.type == "obstacle") aCtx.fillStyle="#888";
-            else aCtx.fillStyle = `rgb(0, 0, ${Math.pow(cell.pheromones / maxPh, 1.5) * 255})`;
+            else {
+                const b = Math.pow(cell.pheromones / maxPh, 1) * 255;
+                aCtx.fillStyle = `rgb(0, 0, ${b})`;
+            };
             aCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
         }
     }
@@ -267,5 +270,4 @@ window.addEventListener('resize', () => {
     initACO();
     initPSO();
 });
-
 setSlide(6);

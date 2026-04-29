@@ -1,4 +1,4 @@
-const MAX_PATH_LENGTH = 5000;
+const MAX_PATH_LENGTH = 2500;
 const ANTS = 100;
 
 const Dist = (x1, y1, x2, y2) => Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
@@ -42,21 +42,6 @@ class Grid {
     getCellById(id) {
         return this.#cells[id] ? this.#cells[id] : null;
     }
-    print(){
-        let display = "";
-        for(let y = 0; y < this.height; y++){
-            for(let x = 0; x < this.width; x++){
-                const cell = this.getCell(x, y);
-                if(cell.type == "food") display += "F";
-                else if(cell.type == "colony") display += "C";
-                else if(cell.type == "obstacle") display += "X";
-                else display += "O";
-                if(x < this.width - 1) display += " ";
-            }
-            if(y < this.height - 1) display += "\n\n";
-        }
-        console.log(display);
-    }
     step(){
         let max = 0;
         Object.keys(this.#cells).forEach(k => {
@@ -75,12 +60,13 @@ class GridCell {
         this.y = y;
         this.type = type;
         this.pheromones = 0;
+        this.smell = 1 / Math.pow(Dist(x, y, food_pos[0], food_pos[1]), 2);
     }
     addPheromones(ph){
         this.pheromones += ph;
     }
     step(){
-        this.pheromones *= 0.85;
+        this.pheromones *= 0.95;
     }
 }
 
@@ -145,6 +131,10 @@ class Ant {
         if(this.#validateCell(x, y - 1, false)) return false;
         return true;
     }
+    #cellFavorability(cell){
+        const MIN_PHEROMONES = 0.01;
+        return Math.pow(Math.max(MIN_PHEROMONES, cell.pheromones), 2) + (0.15 * cell.smell);
+    }
     calcProbs(){
         const cells = [];
         if(this.#validateCell(this.x, this.y + 1)) cells.push({cell: this.grid.getCell(this.x, this.y + 1), prob: 0});
@@ -154,10 +144,9 @@ class Ant {
         if(cells.length == 0){ // The ant trapped itself
 
         }
-        const MIN_PHEROMONES = 0.001;
-        const total = cells.reduce((total, current) => total + Math.max(MIN_PHEROMONES, current.cell.pheromones), 0);
+        const total = cells.reduce((total, current) => total + this.#cellFavorability(current.cell), 0);
         cells.forEach(c => {
-            c.prob = Math.max(MIN_PHEROMONES, c.cell.pheromones) / total;
+            c.prob = this.#cellFavorability(c.cell) / total;
         });
         return cells;
     }
@@ -178,9 +167,7 @@ class Ant {
             }
             cumulative += cells[c].prob;
         }
-        if(nextCell == null) {
-            console.log("N");
-        }
+        if(nextCell == null) return this.onFinish(false);
         this.x = nextCell.x;
         this.y = nextCell.y;
     }
@@ -190,7 +177,7 @@ class Ant {
         this.colony.update();
     }
     layPheromones(){
-        const phPerCell = 5 / this.path.length;
+        const phPerCell = 5 / Math.pow(this.path.length, 1.5);
         this.path.forEach(c => {
             const cell = this.grid.getCellById(c);
             cell.addPheromones(phPerCell);
